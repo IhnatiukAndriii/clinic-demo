@@ -22,3 +22,10 @@ describe("price formatting", () => {
     expect(formatPriceRange({ ...price, price_to: null })).toBe("A$1,200 per implant");
   });
 });
+
+describe("price parts", () => {
+  it("separates the figure from the unit", async () => {
+    const { priceParts } = await import("@/lib/format");
+    expect(priceParts(price)).toEqual({ amount: "A$1,200", unit: "per implant" });
+  });
+});

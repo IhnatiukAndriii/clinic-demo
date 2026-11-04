@@ -23,3 +23,13 @@ export function formatPriceRange(price: Price): string {
   const unit = price.price_unit ? ` ${price.price_unit}` : "";
   return `${from}${to}${unit}`;
 }
+
+export interface PriceParts {
+  amount: string;
+  unit: string;
+}
+
+/** Splits a price into the figure shown large and the unit shown beside it. */
+export function priceParts(price: Price): PriceParts {
+  return { amount: `${symbol(price.currency)}${amount(price.price_from)}`, unit: price.price_unit };
+}
