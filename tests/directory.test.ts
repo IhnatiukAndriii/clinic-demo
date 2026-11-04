@@ -4,6 +4,7 @@ import {
   directoryFacts,
   filterByCity,
   listCities,
+  similarClinics,
   sortClinics,
 } from "@/lib/directory";
 import { SEED_CLINICS } from "@/lib/seed";
@@ -43,5 +44,21 @@ describe("directory helpers", () => {
 
   it("counts clinics that list transfers or hotel nights", () => {
     expect(countClinicsWithStay(SEED_CLINICS)).toBe(3);
+  });
+});
+
+describe("similarClinics", () => {
+  const [saigon] = SEED_CLINICS;
+
+  it("returns other clinics, same city first, up to the limit", () => {
+    const result = similarClinics(SEED_CLINICS, saigon, 2);
+    expect(result).toHaveLength(2);
+    expect(result[0].slug).toBe("lotus-dental-care");
+    expect(result.some((clinic) => clinic.id === saigon.id)).toBe(false);
+  });
+
+  it("skips unpublished clinics", () => {
+    const hidden = SEED_CLINICS.map((clinic) => (clinic.id === "clinic-2" ? { ...clinic, is_published: false } : clinic));
+    expect(similarClinics(hidden, saigon, 2).some((clinic) => clinic.id === "clinic-2")).toBe(false);
   });
 });

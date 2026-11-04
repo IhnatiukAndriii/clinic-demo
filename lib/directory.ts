@@ -53,3 +53,10 @@ export function countClinicsWithStay(clinics: Clinic[]): number {
     clinic.treatments.some((item) => item.inclusions.some((text) => STAY_PATTERN.test(text))),
   ).length;
 }
+
+/** Other published clinics, those in the same city first. */
+export function similarClinics(clinics: Clinic[], clinic: Clinic, limit: number): Clinic[] {
+  const others = clinics.filter((item) => item.id !== clinic.id && item.is_published);
+  const sameCity = (item: Clinic) => (item.city === clinic.city ? 0 : 1);
+  return others.sort((a, b) => sameCity(a) - sameCity(b) || a.name.localeCompare(b.name)).slice(0, limit);
+}

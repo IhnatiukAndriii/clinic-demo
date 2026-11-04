@@ -5,7 +5,7 @@ export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "onD
 export type ButtonSize = "sm" | "md" | "lg";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center whitespace-nowrap justify-center gap-2 rounded-full font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60";
 
 const variants: Record<ButtonVariant, string> = {
   // Coral is reserved for the one primary call to action in a view.

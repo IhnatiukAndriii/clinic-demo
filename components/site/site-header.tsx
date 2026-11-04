@@ -13,7 +13,7 @@ export function SiteHeader() {
   return (
     <header className="border-b border-sand-200 bg-white">
       <div className="page-container flex items-center justify-between gap-4 py-4">
-        <Link href={TREATMENT} className="font-display text-xl font-semibold text-brand-700">
+        <Link href={TREATMENT} className="whitespace-nowrap font-display text-lg font-semibold text-brand-700 sm:text-xl">
           Implants Vietnam
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-8 md:flex">

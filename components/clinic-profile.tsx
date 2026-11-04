@@ -1,96 +1,84 @@
 "use client";
 
 import Link from "next/link";
-import { formatPriceRange } from "@/lib/format";
+import { ClinicGallery } from "@/components/clinic/clinic-gallery";
+import { PricingBlock } from "@/components/clinic/pricing-block";
+import { SimilarClinics } from "@/components/clinic/similar-clinics";
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { similarClinics } from "@/lib/directory";
+import { priceParts } from "@/lib/format";
 import { getClinic, sortedPhotos, useDemoData, useHydrated } from "@/lib/store";
-import { TIER_LABELS } from "@/lib/tiers";
-import { ClinicPhotoImage } from "./clinic-photo";
+import { findTier } from "@/lib/tiers";
 import { EnquiryForm } from "./enquiry-form";
+
+const TREATMENT_HREF = "/treatments/dental-implants";
+
+function NotFound({ loading }: { loading: boolean }) {
+  return (
+    <main className="page-container section-pad">
+      <h1 className="text-heading text-brand-900">{loading ? "Loading clinic…" : "Clinic not found"}</h1>
+      {!loading && (
+        <p className="mt-4 text-lead text-muted">
+          This clinic is not in the directory.{" "}
+          <Link href={TREATMENT_HREF} className="text-brand-700 underline">
+            See all dental implant clinics
+          </Link>
+        </p>
+      )}
+    </main>
+  );
+}
 
 export function ClinicProfile({ slug }: { slug: string }) {
   const data = useDemoData();
   const hydrated = useHydrated();
   const clinic = getClinic(data, slug);
 
-  if (!clinic) {
-    return (
-      <main className="mx-auto max-w-6xl px-6 py-16">
-        <h1 className="font-display text-4xl font-semibold">
-          {hydrated ? "Clinic not found" : "Loading clinic…"}
-        </h1>
-        {hydrated && (
-          <p className="mt-4 text-lg text-muted">
-            This clinic is not in the directory.{" "}
-            <Link href="/treatments/dental-implants" className="text-accent underline">
-              See all dental implant clinics
-            </Link>
-          </p>
-        )}
-      </main>
-    );
-  }
+  if (!clinic) return <NotFound loading={!hydrated} />;
 
-  const [mainPhoto, ...otherPhotos] = sortedPhotos(clinic);
+  const single = findTier(clinic, "single");
   const enquiryTreatment = clinic.treatments[0];
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16">
-      <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">{clinic.name}</h1>
-      <p className="mt-3 text-lg text-muted">
-        {clinic.city}, {clinic.country}
-        {clinic.years_experience ? `, ${clinic.years_experience} years of experience` : ""}
-      </p>
-
-      <section aria-label="Photos" className="mt-10 grid gap-3 sm:grid-cols-3">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl sm:col-span-2 sm:row-span-2 sm:aspect-auto sm:min-h-96">
-          <ClinicPhotoImage photo={mainPhoto} name={clinic.name} sizes="(min-width: 640px) 66vw, 100vw" priority />
+    <main className="pb-24 lg:pb-0">
+      <div className="page-container pt-8">
+        <Breadcrumb
+          items={[
+            { label: "Dental implants in Vietnam", href: TREATMENT_HREF },
+            { label: clinic.name },
+          ]}
+        />
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Badge>{clinic.city}</Badge>
+          {clinic.years_experience ? <Badge tone="sand">{clinic.years_experience} years of experience</Badge> : null}
         </div>
-        {otherPhotos.slice(0, 2).map((photo) => (
-          <div key={photo.id} className="relative aspect-[4/3] overflow-hidden rounded-2xl">
-            <ClinicPhotoImage photo={photo} name={clinic.name} sizes="(min-width: 640px) 33vw, 100vw" />
-          </div>
-        ))}
-      </section>
+        <h1 className="mt-4 max-w-3xl text-display">{clinic.name}</h1>
+      </div>
 
-      <div className="mt-14 grid gap-14 lg:grid-cols-[1fr_26rem]">
+      <div className="page-container mt-10 grid gap-12 pb-16 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-16">
         <div className="space-y-14">
-          <section className="max-w-prose space-y-4 text-lg">
+          <ClinicGallery photos={sortedPhotos(clinic)} name={clinic.name} />
+          <section aria-label="About the clinic" className="max-w-prose space-y-4 text-lead">
             {clinic.description.split("\n").filter(Boolean).map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
             {clinic.languages.length > 0 && (
-              <p className="text-base text-muted">Languages: {clinic.languages.join(", ")}</p>
+              <p className="text-body text-muted">
+                <span className="font-semibold text-ink">Languages:</span> {clinic.languages.join(", ")}
+              </p>
             )}
           </section>
-
-          <section>
-            <h2 className="font-display text-3xl font-semibold">Treatments and prices</h2>
-            <div className="mt-6 space-y-6">
-              {clinic.treatments.map((item) => (
-                <div key={item.tier} className="rounded-2xl border border-line bg-surface p-6">
-                  <h3 className="text-xl font-semibold">{TIER_LABELS[item.tier]}</h3>
-                  <p className="mt-1 font-display text-2xl font-semibold text-accent">{formatPriceRange(item)}</p>
-                  {item.inclusions.length > 0 && (
-                    <>
-                      <p className="mt-4 font-medium">Included in the price</p>
-                      <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-                        {item.inclusions.map((inclusion) => (
-                          <li key={inclusion} className="flex gap-2">
-                            <span aria-hidden className="text-accent">✓</span>
-                            {inclusion}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
+          <PricingBlock treatments={clinic.treatments} />
         </div>
 
-        <section id="enquiry" className="h-fit scroll-mt-8 rounded-2xl border border-line bg-surface p-6 lg:sticky lg:top-8">
-          <h2 className="font-display text-2xl font-semibold">Get a free quote</h2>
+        <section
+          id="enquiry"
+          aria-labelledby="enquiry-title"
+          className="scroll-mt-4 rounded-panel bg-white p-6 shadow-lift lg:sticky lg:top-6"
+        >
+          <h2 id="enquiry-title" className="text-title text-brand-900">Get a free quote</h2>
           <p className="mb-6 mt-2 text-muted">Tell {clinic.name} what you need. There is no obligation.</p>
           {enquiryTreatment ? (
             <EnquiryForm
@@ -102,6 +90,18 @@ export function ClinicProfile({ slug }: { slug: string }) {
             <p>This clinic is not taking requests yet.</p>
           )}
         </section>
+      </div>
+
+      <SimilarClinics clinics={similarClinics(data.clinics, clinic, 2)} />
+
+      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t border-sand-200 bg-white px-5 py-3 lg:hidden">
+        <p className="whitespace-nowrap font-display text-xl font-semibold leading-tight text-brand-900">
+          {single ? `from ${priceParts(single).amount}` : "Ask for a quote"}
+          {single ? <span className="block font-sans text-caption font-normal text-muted">{single.price_unit}</span> : null}
+        </p>
+        <Button href="#enquiry" size="sm">
+          Get a free quote
+        </Button>
       </div>
     </main>
   );
