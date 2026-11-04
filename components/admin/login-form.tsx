@@ -1,32 +1,53 @@
 "use client";
 
-import { useActionState } from "react";
-import { signIn, type LoginState } from "@/app/admin/login/actions";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { signIn, useIsSignedIn } from "@/lib/demo-auth";
 import { inputClass, primaryButton } from "./styles";
 
 export function LoginForm() {
-  const [state, action, pending] = useActionState<LoginState, FormData>(signIn, {});
+  const router = useRouter();
+  const signedIn = useIsSignedIn();
+  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (signedIn) router.replace("/admin/clinics");
+  }, [signedIn, router]);
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password") ?? "");
+    if (!email.trim() || !password) {
+      setError("Enter your email and password.");
+      return;
+    }
+    if (!signIn(email, password)) {
+      setError("That email and password do not match. Check them and try again.");
+      return;
+    }
+    router.replace("/admin/clinics");
+  }
 
   return (
-    <form action={action} className="space-y-5">
-      {state.error && (
+    <form onSubmit={onSubmit} className="space-y-5">
+      {error && (
         <p role="alert" className="rounded-lg border border-danger p-3 text-danger">
-          {state.error}
+          {error}
         </p>
       )}
       <div>
         <label htmlFor="email" className="font-medium">Email</label>
         <input id="email" name="email" type="email" autoComplete="username" required
-          defaultValue={state.email} className={inputClass} />
+          value={email} onChange={(event) => setEmail(event.target.value)} className={inputClass} />
       </div>
       <div>
         <label htmlFor="password" className="font-medium">Password</label>
         <input id="password" name="password" type="password" autoComplete="current-password" required
           className={inputClass} />
       </div>
-      <button type="submit" disabled={pending} className={primaryButton}>
-        {pending ? "Signing in…" : "Sign in"}
-      </button>
+      <button type="submit" className={primaryButton}>Sign in</button>
     </form>
   );
 }

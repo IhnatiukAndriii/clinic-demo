@@ -1,8 +1,10 @@
+import { TIERS, TIER_LABELS } from "./tiers";
+import type { Tier } from "./types";
+
 export interface PriceValues {
   enabled: boolean;
   from: string;
   to: string;
-  currency: string;
   unit: string;
   inclusions: string[];
 }
@@ -16,15 +18,14 @@ export interface ClinicFormValues {
   years: string;
   languages: string;
   published: boolean;
-  prices: Record<string, PriceValues>;
+  prices: Record<Tier, PriceValues>;
   newPhotos: string[];
 }
 
 export interface PriceInput {
-  treatmentId: string;
+  tier: Tier;
   priceFrom: number;
   priceTo: number | null;
-  currency: string;
   unit: string;
   inclusions: string[];
 }
@@ -63,21 +64,22 @@ function text(form: FormData, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export function emptyPrice(): PriceValues {
-  return { enabled: false, from: "", to: "", currency: "AUD", unit: "", inclusions: [] };
+const DEFAULT_UNITS: Record<Tier, string> = { single: "per implant", "full-arch": "per jaw" };
+
+export function emptyPrice(tier: Tier): PriceValues {
+  return { enabled: false, from: "", to: "", unit: DEFAULT_UNITS[tier], inclusions: [] };
 }
 
-export function readClinicForm(form: FormData, treatmentIds: string[]): ClinicFormValues {
-  const prices: Record<string, PriceValues> = {};
-  for (const id of treatmentIds) {
-    prices[id] = {
-      enabled: form.get(`price:${id}:enabled`) === "on",
-      from: text(form, `price:${id}:from`),
-      to: text(form, `price:${id}:to`),
-      currency: text(form, `price:${id}:currency`).toUpperCase() || "AUD",
-      unit: text(form, `price:${id}:unit`),
+export function readClinicForm(form: FormData): ClinicFormValues {
+  const prices = {} as Record<Tier, PriceValues>;
+  for (const tier of TIERS) {
+    prices[tier] = {
+      enabled: form.get(`price:${tier}:enabled`) === "on",
+      from: text(form, `price:${tier}:from`),
+      to: text(form, `price:${tier}:to`),
+      unit: text(form, `price:${tier}:unit`),
       inclusions: form
-        .getAll(`price:${id}:inclusion`)
+        .getAll(`price:${tier}:inclusion`)
         .filter((v): v is string => typeof v === "string")
         .map((v) => v.trim())
         .filter(Boolean),
@@ -101,8 +103,8 @@ export function readClinicForm(form: FormData, treatmentIds: string[]): ClinicFo
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-function validatePrice(treatmentId: string, price: PriceValues, errors: ClinicErrors): PriceInput | null {
-  const key = `price:${treatmentId}`;
+function validatePrice(tier: Tier, price: PriceValues, errors: ClinicErrors): PriceInput | null {
+  const key = `price:${tier}`;
   const from = Number(price.from);
   const to = price.to === "" ? null : Number(price.to);
   if (price.from === "" || !Number.isFinite(from) || from < 0) {
@@ -113,19 +115,14 @@ function validatePrice(treatmentId: string, price: PriceValues, errors: ClinicEr
     errors[key] = "The highest price must be a number equal to or above the starting price.";
     return null;
   }
-  if (!/^[A-Z]{3}$/.test(price.currency)) {
-    errors[key] = "Use a three-letter currency code, for example AUD.";
-    return null;
-  }
   if (price.unit.length > 40) {
     errors[key] = "Use 40 characters or fewer for the price unit.";
     return null;
   }
   return {
-    treatmentId,
+    tier,
     priceFrom: from,
     priceTo: to,
-    currency: price.currency,
     unit: price.unit,
     inclusions: price.inclusions,
   };
@@ -150,13 +147,15 @@ export function validateClinic(values: ClinicFormValues): ClinicParseResult {
   }
 
   const prices: PriceInput[] = [];
-  for (const [treatmentId, price] of Object.entries(values.prices)) {
+  for (const tier of TIERS) {
+    const price = values.prices[tier];
     if (!price.enabled) continue;
-    const parsed = validatePrice(treatmentId, price, errors);
+    const parsed = validatePrice(tier, price, errors);
     if (parsed) prices.push(parsed);
   }
-  if (values.published && prices.length === 0 && !Object.keys(errors).some((k) => k.startsWith("price:"))) {
-    errors.published = "Add at least one price before publishing, so visitors can request a quote.";
+  const missing = TIERS.filter((tier) => !values.prices[tier].enabled);
+  if (values.published && missing.length > 0 && !Object.keys(errors).some((k) => k.startsWith("price:"))) {
+    errors.published = `Add a price for ${missing.map((tier) => TIER_LABELS[tier].toLowerCase()).join(" and ")} before publishing, so visitors can compare clinics.`;
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };

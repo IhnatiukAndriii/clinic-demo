@@ -1,3 +1,8 @@
+import type { Channel } from "./enquiry";
+import type { EnquiryStatus } from "./enquiry-status";
+
+export type Tier = "single" | "full-arch";
+
 export interface Treatment {
   id: string;
   slug: string;
@@ -6,18 +11,21 @@ export interface Treatment {
   body: string;
 }
 
-export interface ClinicPhoto {
-  id?: string;
-  storage_path: string;
-  sort_order: number;
-}
-
-export interface ClinicPrice {
+export interface ClinicTreatment {
+  treatment_id: string;
+  tier: Tier;
   price_from: number;
   price_to: number | null;
-  currency: string;
+  currency: "AUD";
   price_unit: string;
   inclusions: string[];
+}
+
+export interface ClinicPhoto {
+  id: string;
+  /** A path under /public or a data URL for photos uploaded in the browser. */
+  src: string;
+  sort_order: number;
 }
 
 export interface Clinic {
@@ -30,17 +38,24 @@ export interface Clinic {
   years_experience: number | null;
   languages: string[];
   is_published: boolean;
-}
-
-export interface ClinicCardData extends Clinic, ClinicPrice {
   photos: ClinicPhoto[];
+  treatments: ClinicTreatment[];
 }
 
-export interface ClinicTreatmentRow extends ClinicPrice {
-  treatment: Pick<Treatment, "id" | "slug" | "name">;
+export interface Enquiry {
+  id: string;
+  clinic_id: string;
+  treatment_id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  preferred_channel: Channel;
+  message: string;
+  status: EnquiryStatus;
+  created_at: string;
 }
 
-export interface ClinicProfile extends Clinic {
-  photos: ClinicPhoto[];
-  treatments: ClinicTreatmentRow[];
+export interface DemoData {
+  clinics: Clinic[];
+  enquiries: Enquiry[];
 }

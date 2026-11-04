@@ -24,7 +24,6 @@ export type EnquiryResult =
   | { ok: true; value: EnquiryInput }
   | { ok: false; errors: EnquiryErrors; value: Partial<EnquiryInput> };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^[+()\d\s-]{6,25}$/;
 
@@ -46,8 +45,8 @@ export function parseEnquiry(form: FormData): EnquiryResult {
   };
 
   const errors: EnquiryErrors = {};
-  if (!UUID.test(value.clinicId)) errors.clinicId = "This clinic could not be found. Reload the page and try again.";
-  if (!UUID.test(value.treatmentId)) errors.treatmentId = "This treatment could not be found. Reload the page and try again.";
+  if (!value.clinicId) errors.clinicId = "This clinic could not be found. Reload the page and try again.";
+  if (!value.treatmentId) errors.treatmentId = "This treatment could not be found. Reload the page and try again.";
   if (value.name.length < 2) errors.name = "Enter your name.";
   if (value.name.length > 120) errors.name = "Use 120 characters or fewer for your name.";
   if (!EMAIL.test(value.email)) errors.email = "Enter a valid email address, like name@example.com.";

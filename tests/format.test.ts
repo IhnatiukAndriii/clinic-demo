@@ -4,7 +4,7 @@ import { formatPriceFrom, formatPriceRange } from "@/lib/format";
 const price = {
   price_from: 1200,
   price_to: 1800,
-  currency: "AUD",
+  currency: "AUD" as const,
   price_unit: "per implant",
   inclusions: [],
 };

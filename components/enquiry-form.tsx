@@ -1,8 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
-import { submitEnquiry, type EnquiryState } from "@/app/clinics/[slug]/actions";
-import { CHANNELS, CHANNEL_LABELS } from "@/lib/enquiry";
+import { useState, type FormEvent } from "react";
+import { CHANNELS, CHANNEL_LABELS, parseEnquiry, type EnquiryErrors } from "@/lib/enquiry";
+import { createEnquiry, StoreError } from "@/lib/store";
+
+interface EnquiryState {
+  status: "idle" | "success" | "error";
+  message?: string;
+  errors?: EnquiryErrors;
+  values?: Record<string, string>;
+}
 
 const initialState: EnquiryState = { status: "idle" };
 
@@ -25,7 +32,31 @@ interface Props {
 }
 
 export function EnquiryForm({ clinicId, clinicName, treatmentId }: Props) {
-  const [state, formAction, pending] = useActionState(submitEnquiry, initialState);
+  const [state, setState] = useState<EnquiryState>(initialState);
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = parseEnquiry(new FormData(event.currentTarget));
+    if (!result.ok) {
+      setState({
+        status: "error",
+        message: "Please fix the highlighted fields and send again.",
+        errors: result.errors,
+        values: { ...result.value },
+      });
+      return;
+    }
+    try {
+      createEnquiry(result.value);
+      setState({ status: "success" });
+    } catch (error) {
+      setState({
+        status: "error",
+        message: error instanceof StoreError ? error.message : "We could not send your request. Please try again.",
+        values: { ...result.value },
+      });
+    }
+  }
 
   if (state.status === "success") {
     return (
@@ -42,7 +73,7 @@ export function EnquiryForm({ clinicId, clinicName, treatmentId }: Props) {
   const values = state.values ?? {};
 
   return (
-    <form action={formAction} noValidate className="space-y-5">
+    <form onSubmit={onSubmit} noValidate className="space-y-5">
       <input type="hidden" name="clinicId" value={clinicId} />
       <input type="hidden" name="treatmentId" value={treatmentId} />
 
@@ -96,10 +127,9 @@ export function EnquiryForm({ clinicId, clinicName, treatmentId }: Props) {
       </div>
       <button
         type="submit"
-        disabled={pending}
-        className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-8 font-semibold text-white hover:bg-accent-strong disabled:opacity-60"
+        className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-8 font-semibold text-white hover:bg-accent-strong"
       >
-        {pending ? "Sending…" : "Send request"}
+        Send request
       </button>
     </form>
   );

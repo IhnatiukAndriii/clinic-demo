@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { photoUrl } from "@/lib/format";
 import type { ClinicPhoto } from "@/lib/types";
 
 interface Props {
@@ -23,7 +22,7 @@ export function ClinicPhotoImage({ photo, name, sizes, priority }: Props) {
   }
   return (
     <Image
-      src={photoUrl(photo.storage_path)}
+      src={photo.src}
       alt={`${name} clinic`}
       fill
       sizes={sizes}

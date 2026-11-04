@@ -1,21 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
-import { saveClinic, type ClinicFormState } from "@/app/admin/(panel)/clinics/actions";
-import { emptyPrice, type ClinicFormValues } from "@/lib/clinic-form";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import {
+  readClinicForm,
+  validateClinic,
+  type ClinicErrors,
+  type ClinicFormValues,
+} from "@/lib/clinic-form";
+import { createClinic, StoreError, updateClinic } from "@/lib/store";
+import { TIERS } from "@/lib/tiers";
 import { PhotoUploader } from "./photo-uploader";
 import { PriceRow } from "./price-row";
 import { inputClass, primaryButton } from "./styles";
 
-interface TreatmentOption {
-  id: string;
-  name: string;
-}
-
 interface Props {
   clinicId: string | null;
-  treatments: TreatmentOption[];
   initial: ClinicFormValues;
+  savedInitially?: boolean;
 }
 
 function FieldError({ id, message }: { id: string; message?: string }) {
@@ -23,18 +25,54 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   return <p id={id} className="mt-1 text-sm text-danger">{message}</p>;
 }
 
-export function ClinicForm({ clinicId, treatments, initial }: Props) {
-  const [state, action, pending] = useActionState<ClinicFormState, FormData>(
-    saveClinic.bind(null, clinicId),
-    {},
-  );
-  const values = state.values ?? initial;
-  const errors = state.errors ?? {};
+export function ClinicForm({ clinicId, initial, savedInitially = false }: Props) {
+  const router = useRouter();
+  const [values, setValues] = useState(initial);
+  const [errors, setErrors] = useState<ClinicErrors>({});
+  const [message, setMessage] = useState<string | null>(null);
+  const [saved, setSaved] = useState(savedInitially);
+  const [saveCount, setSaveCount] = useState(0);
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaved(false);
+    const submitted = readClinicForm(new FormData(event.currentTarget));
+    setValues(submitted);
+    const parsed = validateClinic(submitted);
+    if (!parsed.ok) {
+      setErrors(parsed.errors);
+      setMessage("Some details need fixing. Check the highlighted fields.");
+      return;
+    }
+
+    try {
+      if (clinicId) {
+        updateClinic(clinicId, parsed.input);
+        setErrors({});
+        setMessage(null);
+        setValues({ ...submitted, newPhotos: [] });
+        setSaveCount((count) => count + 1);
+        setSaved(true);
+      } else {
+        const clinic = createClinic(parsed.input);
+        router.push(`/admin/clinics/${clinic.id}?saved=1`);
+      }
+    } catch (error) {
+      if (!(error instanceof StoreError)) throw error;
+      setErrors(error.field ? { [error.field]: error.message } : {});
+      setMessage(error.message);
+    }
+  }
 
   return (
-    <form action={action} noValidate className="space-y-10">
-      {state.message && (
-        <p role="alert" className="rounded-lg border border-danger p-4 text-danger">{state.message}</p>
+    <form onSubmit={onSubmit} noValidate className="space-y-10">
+      {saved && (
+        <p role="status" className="rounded-lg bg-accent-soft p-4 font-medium text-accent-strong">
+          Clinic saved. Changes are live on the website.
+        </p>
+      )}
+      {message && (
+        <p role="alert" className="rounded-lg border border-danger p-4 text-danger">{message}</p>
       )}
 
       <section className="space-y-5">
@@ -94,20 +132,14 @@ export function ClinicForm({ clinicId, treatments, initial }: Props) {
 
       <section className="space-y-5">
         <h2 className="font-display text-2xl font-semibold">Prices</h2>
-        {treatments.map((treatment) => (
-          <PriceRow
-            key={treatment.id}
-            treatmentId={treatment.id}
-            treatmentName={treatment.name}
-            initial={values.prices[treatment.id] ?? emptyPrice()}
-            error={errors[`price:${treatment.id}`]}
-          />
+        {TIERS.map((tier) => (
+          <PriceRow key={tier} tier={tier} initial={values.prices[tier]} error={errors[`price:${tier}`]} />
         ))}
       </section>
 
       <section className="space-y-4">
         <h2 className="font-display text-2xl font-semibold">Photos</h2>
-        <PhotoUploader />
+        <PhotoUploader key={saveCount} />
       </section>
 
       <section className="space-y-2">
@@ -118,9 +150,7 @@ export function ClinicForm({ clinicId, treatments, initial }: Props) {
         <FieldError id="published-error" message={errors.published} />
       </section>
 
-      <button type="submit" disabled={pending} className={primaryButton}>
-        {pending ? "Saving…" : "Save clinic"}
-      </button>
+      <button type="submit" className={primaryButton}>Save clinic</button>
     </form>
   );
 }

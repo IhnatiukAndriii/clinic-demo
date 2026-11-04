@@ -1,18 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { PhotoError, processPhoto } from "@/lib/photo";
 import { dangerButton } from "./styles";
 
-const BUCKET = "clinic-photos";
-const MAX_BYTES = 8 * 1024 * 1024;
-
-function safeName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "") || "photo";
+interface NewPhoto {
+  key: string;
+  name: string;
+  src: string;
 }
 
 export function PhotoUploader() {
-  const [paths, setPaths] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<NewPhoto[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,36 +19,18 @@ export function PhotoUploader() {
     if (!files || files.length === 0) return;
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    const uploaded: string[] = [];
+    const added: NewPhoto[] = [];
 
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) {
-        setError(`${file.name} is not an image. Choose JPG, PNG or WebP files.`);
-        continue;
+      try {
+        added.push({ key: crypto.randomUUID(), name: file.name, src: await processPhoto(file) });
+      } catch (caught) {
+        setError(caught instanceof PhotoError ? caught.message : `${file.name} could not be added.`);
       }
-      if (file.size > MAX_BYTES) {
-        setError(`${file.name} is larger than 8 MB. Choose a smaller photo.`);
-        continue;
-      }
-      const path = `${crypto.randomUUID()}-${safeName(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {
-        contentType: file.type,
-      });
-      if (uploadError) {
-        setError(`${file.name} could not be uploaded: ${uploadError.message}`);
-        continue;
-      }
-      uploaded.push(path);
     }
 
-    setPaths((current) => [...current, ...uploaded]);
+    setPhotos((current) => [...current, ...added]);
     setBusy(false);
-  }
-
-  async function remove(path: string) {
-    setPaths((current) => current.filter((p) => p !== path));
-    await createClient().storage.from(BUCKET).remove([path]);
   }
 
   return (
@@ -67,23 +48,26 @@ export function PhotoUploader() {
         }}
         className="mt-1 block w-full text-sm"
       />
-      {busy && <p role="status" className="mt-2 text-sm text-muted">Uploading…</p>}
+      {busy && <p role="status" className="mt-2 text-sm text-muted">Preparing photos…</p>}
       {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
-      {paths.length > 0 && (
-        <ul className="mt-3 space-y-2 text-sm">
-          {paths.map((path) => (
-            <li key={path} className="flex items-center gap-3">
-              <input type="hidden" name="newPhoto" value={path} />
-              <span>Uploaded: {path.slice(37)}</span>
-              <button type="button" onClick={() => void remove(path)} className={dangerButton}>
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {paths.length > 0 && (
-        <p className="mt-2 text-sm text-muted">Photos are added to the clinic when you save.</p>
+      {photos.length > 0 && (
+        <>
+          <ul className="mt-3 space-y-2 text-sm">
+            {photos.map((photo) => (
+              <li key={photo.key} className="flex items-center gap-3">
+                <input type="hidden" name="newPhoto" value={photo.src} />
+                {/* eslint-disable-next-line @next/next/no-img-element -- local preview of a browser-held data URL */}
+                <img src={photo.src} alt="" className="size-12 rounded-lg object-cover" />
+                <span>{photo.name}</span>
+                <button type="button" className={dangerButton}
+                  onClick={() => setPhotos((current) => current.filter((p) => p.key !== photo.key))}>
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-sm text-muted">Photos are added to the clinic when you save.</p>
+        </>
       )}
     </div>
   );

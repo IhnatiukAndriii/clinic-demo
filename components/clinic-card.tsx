@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { formatPriceFrom } from "@/lib/format";
-import type { ClinicCardData } from "@/lib/types";
+import { sortedPhotos } from "@/lib/store";
+import { findTier } from "@/lib/tiers";
+import type { Clinic } from "@/lib/types";
 import { ClinicPhotoImage } from "./clinic-photo";
 
-export function ClinicCard({ clinic }: { clinic: ClinicCardData }) {
+export function ClinicCard({ clinic }: { clinic: Clinic }) {
+  const price = findTier(clinic, "single");
   const profile = `/clinics/${clinic.slug}`;
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface">
       <Link href={profile} className="relative block aspect-[4/3] bg-accent-soft">
         <ClinicPhotoImage
-          photo={clinic.photos[0]}
+          photo={sortedPhotos(clinic)[0]}
           name={clinic.name}
           sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
         />
@@ -36,9 +39,11 @@ export function ClinicCard({ clinic }: { clinic: ClinicCardData }) {
           </div>
         </dl>
         <div>
-          <p className="font-display text-2xl font-semibold text-accent">{formatPriceFrom(clinic)}</p>
+          <p className="font-display text-2xl font-semibold text-accent">
+            {price ? formatPriceFrom(price) : "Ask for a quote"}
+          </p>
           <ul className="mt-3 space-y-1 text-sm">
-            {clinic.inclusions.slice(0, 3).map((item) => (
+            {(price?.inclusions ?? []).slice(0, 3).map((item) => (
               <li key={item} className="flex gap-2">
                 <span aria-hidden className="text-accent">✓</span>
                 {item}

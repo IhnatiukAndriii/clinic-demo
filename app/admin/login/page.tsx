@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/admin/login-form";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Admin sign in", robots: { index: false } };
 
-export default async function LoginPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) redirect("/admin/clinics");
-
+export default function LoginPage() {
   return (
     <main className="mx-auto max-w-md px-6 py-20">
       <h1 className="font-display text-3xl font-semibold">Admin sign in</h1>

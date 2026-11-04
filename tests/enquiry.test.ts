@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseEnquiry } from "@/lib/enquiry";
 
-const id = "3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b";
+const id = "clinic-1";
 
 function form(overrides: Record<string, string> = {}): FormData {
   const data = new FormData();
@@ -39,8 +39,8 @@ describe("parseEnquiry", () => {
     }
   });
 
-  it("rejects a malformed clinic id", () => {
-    const result = parseEnquiry(form({ clinicId: "abc" }));
+  it("rejects a missing clinic id", () => {
+    const result = parseEnquiry(form({ clinicId: "" }));
     expect(result.ok).toBe(false);
   });
 
