@@ -6,13 +6,110 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { formatPriceFrom } from "@/lib/format";
 import { listClinics, useDemoData } from "@/lib/store";
 import { findTier } from "@/lib/tiers";
-import type { ClinicTreatment } from "@/lib/types";
+import type { Clinic, ClinicTreatment } from "@/lib/types";
 
-const head = "whitespace-nowrap bg-brand-900 px-4 py-3 text-left font-semibold text-white";
-const cell = "px-4 py-4 align-top";
+const head = "bg-brand-900 px-4 py-3 text-left font-semibold text-white";
+const cell = "border-t border-sand-200 px-4 py-4 align-middle";
+const nameClass =
+  "line-clamp-2 font-sans text-lg font-semibold leading-snug text-brand-900 transition-colors duration-150 hover:text-brand-500";
+const COLUMN_WIDTHS = ["26%", "16%", "12%", "15%", "15%", "16%"];
+const ASK = "Ask the clinic";
 
 function price(tier: ClinicTreatment | undefined): string {
   return tier ? formatPriceFrom(tier) : "Ask for a quote";
+}
+
+function experience(clinic: Clinic): string {
+  return clinic.years_experience ? `${clinic.years_experience} years` : ASK;
+}
+
+function languages(clinic: Clinic): string {
+  return clinic.languages.join(", ") || ASK;
+}
+
+function ClinicName({ clinic }: { clinic: Clinic }) {
+  return (
+    <Link href={`/clinics/${clinic.slug}`} className={nameClass}>
+      {clinic.name}
+    </Link>
+  );
+}
+
+function QuoteButton({ clinic }: { clinic: Clinic }) {
+  return (
+    <Button href={`/clinics/${clinic.slug}#enquiry`} size="sm" className="whitespace-nowrap">
+      Get a free quote
+    </Button>
+  );
+}
+
+function DesktopTable({ clinics }: { clinics: Clinic[] }) {
+  return (
+    <div className="mt-10 hidden overflow-hidden rounded-card bg-white shadow-card md:block">
+      <table className="w-full table-fixed border-collapse text-left">
+        <caption className="sr-only">Clinic comparison</caption>
+        <colgroup>
+          {COLUMN_WIDTHS.map((width, index) => (
+            <col key={index} style={{ width }} />
+          ))}
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col" className={head}>Clinic</th>
+            <th scope="col" className={head}>Languages</th>
+            <th scope="col" className={head}>Experience</th>
+            <th scope="col" className={head}>Single implant from</th>
+            <th scope="col" className={head}>Full arch from</th>
+            <th scope="col" className={head}><span className="sr-only">Quote</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {clinics.map((clinic) => (
+            <tr key={clinic.id}>
+              <th scope="row" className={`${cell} text-left`}>
+                <ClinicName clinic={clinic} />
+                <span className="mt-1 block text-sm font-normal text-muted">{clinic.city}</span>
+              </th>
+              <td className={cell}>{languages(clinic)}</td>
+              <td className={cell}>{experience(clinic)}</td>
+              <td className={`${cell} font-semibold text-brand-900`}>{price(findTier(clinic, "single"))}</td>
+              <td className={cell}>{price(findTier(clinic, "full-arch"))}</td>
+              <td className={cell}><QuoteButton clinic={clinic} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 border-t border-sand-200 py-3">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-right font-medium text-ink">{value}</dd>
+    </div>
+  );
+}
+
+function MobileCards({ clinics }: { clinics: Clinic[] }) {
+  return (
+    <ul className="mt-10 space-y-4 md:hidden">
+      {clinics.map((clinic) => (
+        <li key={clinic.id} className="rounded-card bg-white p-5 shadow-card">
+          <ClinicName clinic={clinic} />
+          <p className="mt-1 text-sm text-muted">{clinic.city}</p>
+          <dl className="mt-4">
+            <Fact label="Languages" value={languages(clinic)} />
+            <Fact label="Experience" value={experience(clinic)} />
+            <Fact label="Single implant from" value={price(findTier(clinic, "single"))} />
+            <Fact label="Full arch from" value={price(findTier(clinic, "full-arch"))} />
+          </dl>
+          <div className="mt-2"><QuoteButton clinic={clinic} /></div>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function ComparisonTable() {
@@ -31,64 +128,10 @@ export function ComparisonTable() {
             No clinics are listed yet. Check back soon.
           </p>
         ) : (
-          <div
-            tabIndex={0}
-            role="region"
-            aria-label="Clinic comparison table, scrolls sideways on small screens"
-            className="mt-10 max-h-[36rem] overflow-auto rounded-card bg-white shadow-card"
-          >
-            <table className="w-full min-w-[60rem] border-separate border-spacing-0 text-left">
-              <thead className="sticky top-0 z-20">
-                <tr>
-                  <th scope="col" className={`${head} sticky left-0 z-10`}>Clinic</th>
-                  <th scope="col" className={head}>City</th>
-                  <th scope="col" className={head}>Languages</th>
-                  <th scope="col" className={head}>Experience</th>
-                  <th scope="col" className={head}>Single implant</th>
-                  <th scope="col" className={head}>Full arch</th>
-                  <th scope="col" className={head}>Top inclusions</th>
-                  <th scope="col" className={head}>
-                    <span className="sr-only">Quote</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {clinics.map((clinic) => {
-                  const single = findTier(clinic, "single");
-                  return (
-                    <tr key={clinic.id} className="group">
-                      <th
-                        scope="row"
-                        className={`${cell} sticky left-0 z-10 border-t border-sand-200 bg-white font-display text-title font-semibold`}
-                      >
-                        <Link
-                          href={`/clinics/${clinic.slug}`}
-                          className="text-brand-900 transition-colors duration-150 hover:text-brand-500"
-                        >
-                          {clinic.name}
-                        </Link>
-                      </th>
-                      <td className={`${cell} border-t border-sand-200`}>{clinic.city}</td>
-                      <td className={`${cell} border-t border-sand-200`}>{clinic.languages.join(", ") || "Ask the clinic"}</td>
-                      <td className={`${cell} whitespace-nowrap border-t border-sand-200`}>
-                        {clinic.years_experience ? `${clinic.years_experience} years` : "Ask the clinic"}
-                      </td>
-                      <td className={`${cell} border-t border-sand-200 font-semibold text-brand-900`}>{price(single)}</td>
-                      <td className={`${cell} border-t border-sand-200`}>{price(findTier(clinic, "full-arch"))}</td>
-                      <td className={`${cell} border-t border-sand-200`}>
-                        {(single?.inclusions ?? []).slice(0, 3).join(", ") || "Ask the clinic"}
-                      </td>
-                      <td className={`${cell} border-t border-sand-200`}>
-                        <Button href={`/clinics/${clinic.slug}#enquiry`} size="sm" className="whitespace-nowrap">
-                          Get a free quote
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <DesktopTable clinics={clinics} />
+            <MobileCards clinics={clinics} />
+          </>
         )}
       </div>
     </section>
