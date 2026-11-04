@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ButtonHTMLAttributes, ComponentProps } from "react";
 
-export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
-export type ButtonSize = "md" | "lg";
+export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "onDark";
+export type ButtonSize = "sm" | "md" | "lg";
 
 const base =
   "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60";
@@ -13,9 +13,11 @@ const variants: Record<ButtonVariant, string> = {
   secondary: "bg-brand-600 text-white hover:bg-brand-700",
   outline: "border-2 border-brand-600 text-brand-700 hover:bg-brand-50",
   ghost: "text-brand-700 hover:bg-brand-50",
+  onDark: "border-2 border-white text-white hover:bg-white/15",
 };
 
 const sizes: Record<ButtonSize, string> = {
+  sm: "h-10 px-4 text-base",
   md: "h-12 px-6 text-base",
   lg: "h-14 px-8 text-lg",
 };

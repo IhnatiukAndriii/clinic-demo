@@ -16,6 +16,9 @@ interface Props {
   /** Shown in full; the caller decides how many. */
   inclusions: string[];
   photoSizes: string;
+  languages?: string[];
+  /** Photo beside the text from md up, for a card that spans both grid columns. */
+  wide?: boolean;
 }
 
 export function ClinicCard({
@@ -28,10 +31,12 @@ export function ClinicCard({
   fullArchPrice,
   inclusions,
   photoSizes,
+  languages = [],
+  wide = false,
 }: Props) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-card bg-surface shadow-card transition-shadow duration-150 hover:shadow-lift">
-      <Link href={href} className="relative block aspect-[3/2] bg-brand-50" aria-label={`View ${name}`}>
+    <article className={`flex h-full flex-col overflow-hidden rounded-card bg-surface shadow-card transition-shadow duration-150 hover:shadow-lift ${wide ? "md:flex-row" : ""}`}>
+      <Link href={href} className={`relative block aspect-[3/2] shrink-0 bg-brand-50 ${wide ? "md:aspect-auto md:w-1/2" : ""}`} aria-label={`View ${name}`}>
         {photoSrc ? (
           <Image src={photoSrc} alt={`${name} clinic`} fill sizes={photoSizes} className="object-cover" />
         ) : (
@@ -55,6 +60,11 @@ export function ClinicCard({
             </div>
           ) : null}
         </div>
+        {languages.length > 0 ? (
+          <p className="text-muted">
+            <span className="font-semibold text-ink">Languages:</span> {languages.join(", ")}
+          </p>
+        ) : null}
         <ul className="space-y-2">
           {inclusions.map((item) => (
             <li key={item} className="flex gap-2">

@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { TreatmentClinics } from "@/components/treatment-clinics";
+import { ClinicsSection } from "@/components/treatment/clinics-section";
+import { ComparisonTable } from "@/components/treatment/comparison-table";
+import { CtaBand } from "@/components/treatment/cta-band";
+import { GuideFaq } from "@/components/treatment/guide-faq";
+import { Hero } from "@/components/treatment/hero";
+import { HowItWorks } from "@/components/treatment/how-it-works";
+import { StaySection } from "@/components/treatment/stay-section";
 import { getTreatment, listTreatments } from "@/lib/seed";
 
 export function generateStaticParams() {
@@ -23,12 +29,14 @@ export default async function TreatmentPage({ params }: PageProps<"/treatments/[
   if (!treatment) notFound();
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16">
-      <h1 className="max-w-3xl font-display text-4xl font-semibold leading-tight sm:text-5xl">
-        {treatment.name} in Vietnam
-      </h1>
-      <p className="mt-5 max-w-2xl text-lg text-muted">{treatment.summary}</p>
-      <TreatmentClinics />
+    <main>
+      <Hero title={`${treatment.name} in Vietnam`} summary={treatment.summary} />
+      <ComparisonTable />
+      <ClinicsSection />
+      <HowItWorks />
+      <StaySection />
+      <GuideFaq />
+      <CtaBand />
     </main>
   );
 }

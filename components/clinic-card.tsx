@@ -3,7 +3,7 @@ import { findTier } from "@/lib/tiers";
 import type { Clinic } from "@/lib/types";
 import { ClinicCard as ClinicCardView } from "./ui/clinic-card";
 
-export function ClinicCard({ clinic }: { clinic: Clinic }) {
+export function ClinicCard({ clinic, wide = false }: { clinic: Clinic; wide?: boolean }) {
   const single = findTier(clinic, "single");
   const profile = `/clinics/${clinic.slug}`;
   return (
@@ -16,7 +16,9 @@ export function ClinicCard({ clinic }: { clinic: Clinic }) {
       singlePrice={single}
       fullArchPrice={findTier(clinic, "full-arch")}
       inclusions={(single?.inclusions ?? []).slice(0, 3)}
-      photoSizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+      languages={clinic.languages}
+      wide={wide}
+      photoSizes={wide ? "(min-width: 768px) 576px, 100vw" : "(min-width: 1152px) 560px, (min-width: 768px) 50vw, 100vw"}
     />
   );
 }

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Fraunces, Figtree } from "next/font/google";
 import "./globals.css";
 
@@ -19,22 +18,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${figtree.variable} ${fraunces.variable}`}>
       <body className="flex min-h-screen flex-col">
-        <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-            <Link href="/" className="font-display text-xl font-semibold text-accent">
-              Implants Vietnam
-            </Link>
-            <Link href="/treatments/dental-implants" className="text-sm text-muted hover:text-ink">
-              Dental implants
-            </Link>
-          </div>
-        </header>
-        <div className="flex-1">{children}</div>
-        <footer className="border-t border-line bg-surface">
-          <p className="mx-auto max-w-6xl px-6 py-8 text-sm text-muted">
-            Demo directory. Clinics and prices shown are fictional examples.
-          </p>
-        </footer>
+        {children}
       </body>
     </html>
   );
